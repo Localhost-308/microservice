@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmar Portabilidade</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #eee;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .confirm-box {
+            background: #fff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        form button {
+            background-color: #28a745;
+            border: none;
+            padding: 10px 20px;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        form button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="confirm-box">
+        <h2>Você confirma a portabilidade dos seus dados?</h2>
+        <form action="/portability/confirm/yes" method="POST">
+            <button type="submit">Confirmar</button>
+        </form>
+    </div>
+</body>
+</html>
