@@ -1,14 +1,12 @@
 import os
-from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
 from datetime import timedelta
+from flask import Flask, redirect
 from flask_session import Session
-from controller import RegisterBlueprint
 from extension.jwt_extension import jwt
-# from extension.database_extension import db
-# from extension.google_extension import oauth
-# from database.connection import DatabaseConnection
+from controller import RegisterBlueprint
+from security.crypto_manager import CryptoManager
 
 class App:
     def __init__(self):
@@ -18,44 +16,53 @@ class App:
             self.app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
             self.app.config['SESSION_TYPE'] = 'filesystem'
 
-            # self.app.config['SQLALCHEMY_DATABASE_URI'] = DatabaseConnection.get_db_url()
-            # self.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
             self.app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
+            self.app.config['JWT_TOKEN_LOCATION'] = ['cookies']
             self.app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=int(os.getenv('JWT_ACCESS_TOKEN_EXPIRES')))
             self.app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=int(os.getenv('JWT_REFRESH_TOKEN_EXPIRES')))
 
-            # CORS(self.app, resources={r"/*": {"origins": "http://localhost:4200"}})
             CORS(self.app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:4200"}})
-
             Session(self.app)
-            # oauth.init_app(self.app)
-            # db.init_app(self.app)
             jwt.init_app(self.app)
-
-            # self.app.teardown_appcontext(self._close_database_connection)
-            # self.app.before_request(self._create_database_connection)
+            CryptoManager()
          
         except Exception as e:
             print(f"Erro inesperado: {e}")
 
-    def getApp(self):
+    def get_app(self):
         return self.app
 
     def run(self, host:str='127.0.0.1', port:int=5000, debug:bool=True):
         self.app.run(host=host, port=port, debug=debug)
     
-    def registerBlueprint(self):
-        RegisterBlueprint(self.app).registerAllBlueprint()
+    def register_blueprint(self):
+        RegisterBlueprint(self.app).register_all_blueprint()
 
-    # def _close_database_connection(self, exception=None):
-    #     DatabaseConnection.close_connection(exception)
+    def remove_unknown_endpoints(self):
+        """
+        Configures redirects for any unknown routes, ensuring that:
+        1. Access to the root ('/') is redirected to '/portability/'.
+        2. Any other URL that does not match a defined route is redirected to '/portability/'.
+        3. If a user tries to access a path under '/portability/' (e.g., '/portability/<some_path>'),
+        they will also be redirected to the root of '/portability/'.
 
-    # def _create_database_connection(self):
-    #     """Garante que a conexão seja criada antes da requisição"""
-    #     DatabaseConnection.create_connection()
+        These redirects ensure that the user is always directed to the '/portability/' page 
+        and prevents 404 errors for invalid URLs.
+        """
+        @self.app.route('/', methods=['GET'])
+        def root():
+            return redirect('/portability/', code=301)
+        
+        @self.app.route('/<path:path>', methods=['GET', 'POST'])
+        def catch_all(path):
+            return redirect('/portability/', code=301)
+
+        @self.app.route('/portability/<path:path>', methods=['GET', 'POST'])
+        def catch_all_portability(path):
+            return redirect('/portability/', code=301)
 
 if __name__ == '__main__':
     app_instance = App()
-    app_instance.registerBlueprint()
+    app_instance.register_blueprint()
+    app_instance.remove_unknown_endpoints()
     app_instance.run()

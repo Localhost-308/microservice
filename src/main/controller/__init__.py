@@ -5,7 +5,7 @@ class RegisterBlueprint:
     def __init__(self, app):
         self.app = app
 
-    def registerAllBlueprint(self):
+    def register_all_blueprint(self):
         # Encontra todos os arquivos que começam com 'endpoint' no diretório atual
         blueprint_files = glob.glob(os.path.join(os.path.dirname(__file__), '*.py'))
 
@@ -22,27 +22,3 @@ class RegisterBlueprint:
                 # Se o Blueprint for encontrado, registre-o
                 if blueprint:
                     self.app.register_blueprint(blueprint)
-
-
-
-# @portability_bp.route('/login', methods=['POST'])
-# # @jwt_required()
-# def login():
-#     return 'Login feito com sucesso'
-
-# @portability_bp.route('/user/info', methods=['POST'])
-# # @jwt_required()
-# def get_user_info():
-#     email = request.form['email']
-#     senha = request.form['senha']
-#     callback = request.form['callback']
-    
-#     # Simulando uma "validação" - aqui poderia ser uma chamada de banco de dados ou autenticação externa
-#     if email == "usuario@teste.com" and senha == "senha123":
-#         # Sucesso na validação, agora redireciona
-#         app_teste_url = f'{callback}?email={email}&senha={senha}'
-#         return redirect(app_teste_url)
-#     else:
-#         # Se a validação falhar, podemos retornar uma mensagem ou reexibir o formulário
-#         return "Credenciais inválidas", 400
-

@@ -1,52 +1,27 @@
 import os
-import jwt
 import requests
-from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity, create_access_token
-from flask import Blueprint, jsonify, request, redirect, render_template, session
 from datetime import timedelta
-import datetime
+from security.auth_manager import AuthManager
+from flask_jwt_extended import create_access_token
+from flask import Blueprint, jsonify, request, redirect, render_template, session, flash
+
+# user.fortest@gmail.com
 
 portability_bp = Blueprint('portability', __name__, url_prefix='/portability')
 
-secret_key = "c700f8af41363085d048dd9b875cbaf30a9691467c954930c9b673a04e262ac6"
-
-@portability_bp.route('/token', methods=['GET'])
-# @jwt_required()
-def generete_and_save_token():
-    identity = 'api-portability'
-    additional_claims = {
-        'company_id': 1
-    }
-    access_token = create_access_token(
-        identity=identity,
-        additional_claims=additional_claims,
-        expires_delta=timedelta(minutes=2)
-    )
-    # payload = {
-    # "sub": '12345',
-    # "user_id": 12345,
-    # "exp": timedelta(seconds=10)
-    # }
-
-    # # Gerar o token JWT
-    # access_token = jwt.encode(payload, secret_key, algorithm="HS256")
-    return {'token': str(access_token)}
-
-
 @portability_bp.route('/', methods=['GET'])
-# @jwt_required()
 def login_form():
     session['api_callback'] = 'localhost:teste'
     return render_template('portability_form.html')
 
-@portability_bp.route('/login', methods=['POST'])
-# @jwt_required()
+
+@portability_bp.route('/', methods=['POST'])
 def login():
     email = request.form.get('email')
     senha = request.form.get('senha')
 
     try:
-        response = requests.post("http://localhost:5005/api/v0/users/login", json={
+        response = requests.post(os.getenv('API_LOGIN_URL'), json={
             "email": email,
             "password": senha
         })
@@ -63,27 +38,38 @@ def login():
 
             session['api_token'] = data.get('access_token')
             session['api_user_id'] = user_data.get('id')
+
+            session['access_token'] = create_access_token(
+                identity=str(user_data.get('id')),
+                expires_delta=timedelta(minutes=2)
+            )
             # session['api_user_name'] = f"{user_data.get('first_name')} {user_data.get('last_name')}"
             return redirect('/portability/confirm')
+            # resp = make_response()
+            # resp.set_cookie(key='access_token_cookie', value=session.get('token'), httponly=True, secure=True, max_age=timedelta(minutes=10))
+            # return resp
         else:
-            return redirect('/portability/') # arrumar para que mostre a mensagem de erro de email ou senha
-
+            flash('Email ou senha incorretos', 'error')
+            return redirect('/portability/')
     except Exception as e:
-        return f"Erro ao tentar autenticar: {str(e)}", 500
+        flash('Ocorreu um erro ao validar seu usuario. Tente novamente em alguns minutos', 'error')
+        # return f"Erro ao tentar autenticar: {str(e)}", 500
+        return redirect('/portability/')
 
 
 @portability_bp.route('/confirm', methods=['GET'])
+@AuthManager()
 def confirm_page():
-    if 'api_user_email' not in session:
-        return redirect('/portability/')
+    # if 'api_user_email' not in session:
+    #     return redirect('/portability/')
     return render_template('confirm_portability.html')
 
 
 @portability_bp.route('/confirm/yes', methods=['POST'])
+@AuthManager()
 def confirm_yes():
-    if 'api_user_email' not in session:
-        return redirect('/portability/')
-
+    # if 'api_user_email' not in session:
+    #     return redirect('/portability/')
     try:
         headers = {
             'Authorization': f'Bearer {session.get('api_token')}',
@@ -115,7 +101,6 @@ def confirm_yes():
         }
         
         return data
-
     except Exception as e:
         print(e)
         return f"Erro ao tentar autenticar: {str(e)}", 500

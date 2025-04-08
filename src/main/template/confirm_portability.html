@@ -43,39 +43,9 @@
 <body>
     <div class="confirm-box">
         <h2>Você confirma a portabilidade dos seus dados?</h2>
-        <form id="confirm-form" action="/portability/confirm/yes/" method="POST">
+        <form action="/portability/confirm/yes" method="POST">
             <button type="submit">Confirmar</button>
         </form>
     </div>
-
-    <script>
-        // Espera o envio do formulário
-        document.getElementById("confirm-form").addEventListener("submit", function(event) {
-            event.preventDefault();  // Evita o envio tradicional do formulário
-
-            // Recupera o token da sessão (pode ser inserido pelo servidor no HTML)
-            const token = "{{ session.get('api_token') }}"; 
-
-            // Configura o cabeçalho da requisição AJAX
-            const headers = {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-            };
-
-            // Faz a requisição AJAX para o servidor
-            fetch("/portability/confirm/yes/", {
-                method: "POST",
-                headers: headers
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Manipule a resposta aqui, por exemplo, mostrando os dados retornados
-                console.log(data);
-            })
-            .catch(error => {
-                console.error("Erro ao confirmar portabilidade:", error);
-            });
-        });
-    </script>
 </body>
 </html>
