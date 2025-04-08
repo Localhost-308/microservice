@@ -5,8 +5,6 @@ from security.auth_manager import AuthManager
 from flask_jwt_extended import create_access_token
 from flask import Blueprint, jsonify, request, redirect, render_template, session, flash
 
-# user.fortest@gmail.com
-
 portability_bp = Blueprint('portability', __name__, url_prefix='/portability')
 
 @portability_bp.route('/', methods=['GET'])
