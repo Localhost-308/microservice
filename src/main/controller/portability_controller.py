@@ -36,13 +36,7 @@ def generete_and_save_token():
 @portability_bp.route('/', methods=['GET'])
 # @jwt_required()
 def login_form():
-    # claims = get_jwt()
-    # session['api_secret_key'] = claims.get('secret_key')
-    # session['api_callback'] = claims.get('callback')
-    # session['api_company_id'] = claims.get('company_id')
-    session['api_secret_key'] = "c700f8af41363085d048dd9b875cbaf30a9691467c954930c9b673a04e262ac6"
     session['api_callback'] = 'localhost:teste'
-    session['api_company_id'] = 1
     return render_template('portability_form.html')
 
 @portability_bp.route('/login', methods=['POST'])
@@ -68,7 +62,8 @@ def login():
             #     return "Token não recebido", 500
 
             session['api_token'] = data.get('access_token')
-            session['api_user_name'] = f"{user_data.get('first_name')} {user_data.get('last_name')}"
+            session['api_user_id'] = user_data.get('id')
+            # session['api_user_name'] = f"{user_data.get('first_name')} {user_data.get('last_name')}"
             return redirect('/portability/confirm')
         else:
             return redirect('/portability/') # arrumar para que mostre a mensagem de erro de email ou senha
@@ -95,26 +90,31 @@ def confirm_yes():
             'Content-Type': 'application/json'
         }
 
-        token = create_access_token(
-            identity='api-portability',
-            additional_claims={
-                'company_id': session.get('api_company_id')
-            },
-            expires_delta=timedelta(hours=5)
+        area_response = requests.get(
+            os.getenv('API_PORTABILITY_URL'),
+            headers=headers
+        )
+        user_response = requests.get(
+            os.getenv('API_USER_URL').format(user_id=session.get("api_user_id")),
+            headers=headers
         )
 
-        response = requests.get("http://localhost:5005/api/v0/portability", headers=headers, json={
-            'token': token
-        })
+        area_data = []
+        user_data = []
 
-        user_data_from_api = []
-
-        if response.status_code == 200:
-            data = response.json()
-            data_info = jwt.decode(data.get('data'), os.environ.get('JWT_SECRET_KEY'), algorithms=["HS256"])
-            user_data_from_api = data_info.get('user_data')
+        if area_response.status_code == 200:
+            area_data = area_response.json()
         
-        return jsonify(user_data_from_api)
+        if user_response.status_code == 200:
+            user_data = user_response.json()
+            del user_data['id']
+        
+        data = {
+            'user_data': user_data,
+            'area_data': area_data
+        }
+        
+        return data
 
     except Exception as e:
         print(e)
