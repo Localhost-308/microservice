@@ -6,7 +6,6 @@ from flask import Flask, redirect
 from flask_session import Session
 from extension.jwt_extension import jwt
 from controller import RegisterBlueprint
-from security.crypto_manager import CryptoManager
 
 class App:
     def __init__(self):
@@ -24,7 +23,6 @@ class App:
             CORS(self.app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:4200"}})
             Session(self.app)
             jwt.init_app(self.app)
-            CryptoManager()
          
         except Exception as e:
             print(f"Erro inesperado: {e}")
@@ -55,6 +53,8 @@ class App:
         
         @self.app.route('/<path:path>', methods=['GET', 'POST'])
         def catch_all(path):
+            # if path == 'favicon.ico':
+            #     return '', 204
             return redirect('/portability/', code=301)
 
         @self.app.route('/portability/<path:path>', methods=['GET', 'POST'])

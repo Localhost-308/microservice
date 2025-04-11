@@ -2,18 +2,26 @@ import os
 import requests
 from datetime import timedelta
 from security.auth_manager import AuthManager
+from security.crypto_manager import CryptoManager
 from flask_jwt_extended import create_access_token
 from flask import Blueprint, jsonify, request, redirect, render_template, session, flash
 
 portability_bp = Blueprint('portability', __name__, url_prefix='/portability')
+crypto_manager = CryptoManager()
+
+# @portability_bp.route('/favicon.ico')
+# def favicon():
+#     return '', 204
+
 
 @portability_bp.route('/', methods=['GET'])
 def login_form():
-    session['api_callback'] = 'localhost:teste'
+    session.clear()
+    session['api_callback'] = request.args.get('callback')
     return render_template('portability_form.html')
 
 
-@portability_bp.route('/', methods=['POST'])
+@portability_bp.route('/login', methods=['POST'])
 def login():
     email = request.form.get('email')
     senha = request.form.get('senha')
@@ -28,47 +36,38 @@ def login():
             session['api_user_email'] = email
 
             data = response.json()
-            # access_token = data.get('access_token')
             user_data = data.get('user')
-
-            # if not access_token:
-            #     return "Token não recebido", 500
 
             session['api_token'] = data.get('access_token')
             session['api_user_id'] = user_data.get('id')
 
             session['access_token'] = create_access_token(
                 identity=str(user_data.get('id')),
-                expires_delta=timedelta(minutes=2)
+                expires_delta=timedelta(minutes=5)
             )
-            # session['api_user_name'] = f"{user_data.get('first_name')} {user_data.get('last_name')}"
+
             return redirect('/portability/confirm')
-            # resp = make_response()
-            # resp.set_cookie(key='access_token_cookie', value=session.get('token'), httponly=True, secure=True, max_age=timedelta(minutes=10))
-            # return resp
         else:
             flash('Email ou senha incorretos', 'error')
             return redirect('/portability/')
     except Exception as e:
         flash('Ocorreu um erro ao validar seu usuario. Tente novamente em alguns minutos', 'error')
-        # return f"Erro ao tentar autenticar: {str(e)}", 500
         return redirect('/portability/')
 
 
 @portability_bp.route('/confirm', methods=['GET'])
 @AuthManager()
 def confirm_page():
-    # if 'api_user_email' not in session:
-    #     return redirect('/portability/')
     return render_template('confirm_portability.html')
 
 
 @portability_bp.route('/confirm/yes', methods=['POST'])
 @AuthManager()
 def confirm_yes():
-    # if 'api_user_email' not in session:
-    #     return redirect('/portability/')
     try:
+        user_fields = request.form.getlist('user_data')
+        area_fields = request.form.getlist('area_data')
+
         headers = {
             'Authorization': f'Bearer {session.get('api_token')}',
             'Content-Type': 'application/json'
@@ -76,7 +75,8 @@ def confirm_yes():
 
         area_response = requests.get(
             os.getenv('API_PORTABILITY_URL'),
-            headers=headers
+            headers=headers,
+            json={'columns': area_fields}
         )
         user_response = requests.get(
             os.getenv('API_USER_URL').format(user_id=session.get("api_user_id")),
@@ -84,7 +84,7 @@ def confirm_yes():
         )
 
         area_data = []
-        user_data = []
+        user_data = {}
 
         if area_response.status_code == 200:
             area_data = area_response.json()
@@ -94,11 +94,12 @@ def confirm_yes():
             del user_data['id']
         
         data = {
-            'user_data': user_data,
+            'user_data': {k: v for k,v in user_data.items() if k in user_fields},
             'area_data': area_data
         }
-        
-        return data
+
+        return redirect(f"{session.get('api_callback')}?data={crypto_manager.encrypt_data(data)}", code=302)
     except Exception as e:
-        print(e)
-        return f"Erro ao tentar autenticar: {str(e)}", 500
+        flash('Ocorreu um erro ao pegar as suas informações. Tente novamente em alguns minutos', 'error')
+        return redirect('/portability/')
+

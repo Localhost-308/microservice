@@ -34,7 +34,6 @@ class AuthManager:
             raise Unauthorized("Token não encontrado ou inválido.")
         # if token.get('exp') < datetime.now().timestamp():
         #     raise Unauthorized("Token expirado. Faça login novamente.")
-        print(token)
         return token
     
     def __call__(self, fn):
@@ -46,12 +45,11 @@ class AuthManager:
         def wrapper(*args, **kwargs):
             if self.__check_jwt():
                 try:
-                    self.__verify_jwt()  # Verifica se o token é válido
+                    self.__verify_jwt()
                 except Unauthorized:
                     flash('Sessão expirada ou inválida. Faça login novamente.', 'error')
                     return redirect(url_for('portability.login_form'))
             else:
-                print('nao tem cookie')
                 flash('Sessão expirada. Faça login novamente.', 'error')
                 return redirect(url_for('portability.login_form'))
             return fn(*args, **kwargs)
