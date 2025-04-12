@@ -47,19 +47,17 @@ class App:
         These redirects ensure that the user is always directed to the '/portability/' page 
         and prevents 404 errors for invalid URLs.
         """
-        @self.app.route('/', methods=['GET'])
-        def root():
-            return redirect('/portability/', code=301)
+        # @self.app.route('/', methods=['GET'])
+        # def root():
+        #     return redirect('/portability/', code=301)
         
-        @self.app.route('/<path:path>', methods=['GET', 'POST'])
-        def catch_all(path):
-            # if path == 'favicon.ico':
-            #     return '', 204
-            return redirect('/portability/', code=301)
+        # @self.app.route('/<path:path>', methods=['GET', 'POST'])
+        # def catch_all(path):
+        #     return redirect('/portability/', code=301)
 
-        @self.app.route('/portability/<path:path>', methods=['GET', 'POST'])
-        def catch_all_portability(path):
-            return redirect('/portability/', code=301)
+        # @self.app.route('/portability/<path:path>', methods=['GET', 'POST'])
+        # def catch_all_portability(path):
+        #     return redirect('/portability/', code=301)
 
 if __name__ == '__main__':
     app_instance = App()
