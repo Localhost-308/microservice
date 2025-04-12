@@ -1,23 +1,23 @@
 import os
 import requests
 from datetime import timedelta
+from urllib.parse import quote
 from security.auth_manager import AuthManager
 from security.crypto_manager import CryptoManager
 from flask_jwt_extended import create_access_token
 from flask import Blueprint, jsonify, request, redirect, render_template, session, flash
+from util.session import ACCESS_TOKEN, API_CALLBACK, API_PUBLIC_KEY, API_TOKEN, API_USER_ID
+from util.message import ERROR_LOGIN_VALIDATION, ERROR_LOGIN_INVALID_CREDENTIALS, ERROR_PORTABILITY_DATA_FETCH
 
 portability_bp = Blueprint('portability', __name__, url_prefix='/portability')
 crypto_manager = CryptoManager()
 
-# @portability_bp.route('/favicon.ico')
-# def favicon():
-#     return '', 204
-
-
 @portability_bp.route('/', methods=['GET'])
 def login_form():
-    session.clear()
-    session['api_callback'] = request.args.get('callback')
+    params = request.args
+    session[API_PUBLIC_KEY] = params.get('public_key')
+    print(params)
+    session[API_CALLBACK] = params.get('callback')
     return render_template('portability_form.html')
 
 
@@ -33,25 +33,23 @@ def login():
         })
 
         if response.status_code == 200:
-            session['api_user_email'] = email
-
             data = response.json()
             user_data = data.get('user')
 
-            session['api_token'] = data.get('access_token')
-            session['api_user_id'] = user_data.get('id')
+            session[API_TOKEN] = data.get(ACCESS_TOKEN)
+            session[API_USER_ID] = user_data.get('id')
 
-            session['access_token'] = create_access_token(
+            session[ACCESS_TOKEN] = create_access_token(
                 identity=str(user_data.get('id')),
                 expires_delta=timedelta(minutes=5)
             )
 
             return redirect('/portability/confirm')
         else:
-            flash('Email ou senha incorretos', 'error')
+            flash(ERROR_LOGIN_INVALID_CREDENTIALS, 'error')
             return redirect('/portability/')
     except Exception as e:
-        flash('Ocorreu um erro ao validar seu usuario. Tente novamente em alguns minutos', 'error')
+        flash(ERROR_LOGIN_VALIDATION, 'error')
         return redirect('/portability/')
 
 
@@ -69,7 +67,7 @@ def confirm_yes():
         area_fields = request.form.getlist('area_data')
 
         headers = {
-            'Authorization': f'Bearer {session.get('api_token')}',
+            'Authorization': f'Bearer {session.get('external_api_token')}',
             'Content-Type': 'application/json'
         }
 
@@ -79,7 +77,7 @@ def confirm_yes():
             json={'columns': area_fields}
         )
         user_response = requests.get(
-            os.getenv('API_USER_URL').format(user_id=session.get("api_user_id")),
+            os.getenv('API_USER_URL').format(user_id=session.get('external_api_user_id')),
             headers=headers
         )
 
@@ -98,8 +96,11 @@ def confirm_yes():
             'area_data': area_data
         }
 
-        return redirect(f"{session.get('api_callback')}?data={crypto_manager.encrypt_data(data)}", code=302)
+        encrypted_data = crypto_manager.encrypt_data(data, external_public_key=session.get('external_api_public_key'))
+        external_api_callback = session.get('external_api_callback')
+        session.clear()
+        return redirect(f'{external_api_callback}?data={quote(encrypted_data)}', code=302)
     except Exception as e:
-        flash('Ocorreu um erro ao pegar as suas informações. Tente novamente em alguns minutos', 'error')
+        print(f'\nErro: {e}\n')
+        flash(ERROR_PORTABILITY_DATA_FETCH, 'error')
         return redirect('/portability/')
-

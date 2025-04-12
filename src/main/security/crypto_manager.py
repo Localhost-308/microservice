@@ -2,6 +2,7 @@ import os
 import json
 import base64
 from Crypto.PublicKey import RSA
+from urllib.parse import unquote_plus
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
@@ -17,14 +18,20 @@ class CryptoManager:
         if not (private_key and public_key):
             self.__generate_keys()
 
-    def encrypt_data(self, json_data:json):
+    def encrypt_data(self, json_data:json, external_public_key:str|None=None):
         data = json.dumps(json_data)
         data_bytes = data.encode('utf-8')
         symmetric_key = get_random_bytes(32)
         cipher_aes = AES.new(symmetric_key, AES.MODE_CBC)
         padded_data = pad(data_bytes, AES.block_size)
         encrypted_text = cipher_aes.encrypt(padded_data)
-        asymmetric_key = self.__get_key(self.path_to_public_key)
+    
+        if external_public_key:
+            asymmetric_key = self.__str_key_to_rsa_key(external_public_key)
+        else:
+            asymmetric_key = self.__get_key(self.path_to_public_key)
+
+        # asymmetric_key = self.__get_key(self.path_to_public_key)
         cipher_rsa = PKCS1_OAEP.new(asymmetric_key)
         encrypted_key = cipher_rsa.encrypt(symmetric_key)
 
@@ -43,6 +50,9 @@ class CryptoManager:
 
         return json.loads(decrypted_data.decode('utf-8'))
 
+    def __str_key_to_rsa_key(self, file_str:str):
+        return RSA.import_key(file_str)
+
     def __generate_keys(self):
         key = RSA.generate(2048)
         private_key = key.export_key()
@@ -55,4 +65,4 @@ class CryptoManager:
 
     def __get_key(self, file_path: str):
         with open(file_path, 'rb') as file:
-            return RSA.import_key(file.read())
+            return self.__str_key_to_rsa_key(file.read())

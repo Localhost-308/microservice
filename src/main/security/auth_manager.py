@@ -1,7 +1,8 @@
 from functools import wraps
-from flask import redirect, url_for, session, flash
 from flask_jwt_extended import decode_token
 from werkzeug.exceptions import Unauthorized
+from flask import redirect, url_for, session, flash
+from util.message import ERROR_SESSION_EXPIRED
 
 class AuthManager:
     def __check_jwt(self):
@@ -21,7 +22,7 @@ class AuthManager:
                 decoded_token = decode_token(access_token)
                 return decoded_token
             except Exception as e:
-                flash(f"Sessão expirada. Faça login novamente.", 'error')
+                flash(ERROR_SESSION_EXPIRED, 'error')
                 return None
         return None
 
@@ -31,7 +32,7 @@ class AuthManager:
         """
         token = self.__get_jwt()
         if not token:
-            raise Unauthorized("Token não encontrado ou inválido.")
+            raise Unauthorized(ERROR_SESSION_EXPIRED)
         # if token.get('exp') < datetime.now().timestamp():
         #     raise Unauthorized("Token expirado. Faça login novamente.")
         return token
@@ -47,10 +48,10 @@ class AuthManager:
                 try:
                     self.__verify_jwt()
                 except Unauthorized:
-                    flash('Sessão expirada ou inválida. Faça login novamente.', 'error')
+                    flash(ERROR_SESSION_EXPIRED, 'error')
                     return redirect(url_for('portability.login_form'))
             else:
-                flash('Sessão expirada. Faça login novamente.', 'error')
+                flash(ERROR_SESSION_EXPIRED, 'error')
                 return redirect(url_for('portability.login_form'))
             return fn(*args, **kwargs)
         
