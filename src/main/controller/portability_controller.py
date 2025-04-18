@@ -5,19 +5,21 @@ from urllib.parse import quote
 from security.auth_manager import AuthManager
 from security.crypto_manager import CryptoManager
 from flask_jwt_extended import create_access_token
-from flask import Blueprint, jsonify, request, redirect, render_template, session, flash
+from flask import Blueprint, jsonify, request, redirect, render_template, session, flash, abort
 from util.session import ACCESS_TOKEN, API_CALLBACK, API_PUBLIC_KEY, API_TOKEN, API_USER_ID
-from util.message import ERROR_LOGIN_VALIDATION, ERROR_LOGIN_INVALID_CREDENTIALS, ERROR_PORTABILITY_DATA_FETCH
+from util.message import ERROR_LOGIN_VALIDATION, ERROR_LOGIN_INVALID_CREDENTIALS, ERROR_PORTABILITY_DATA_FETCH, ERROR_API_MISSING_PARAMS
 
 portability_bp = Blueprint('portability', __name__, url_prefix='/portability')
 crypto_manager = CryptoManager()
 
 @portability_bp.route('/', methods=['GET'])
 def login_form():
-    params = request.args
-    session[API_PUBLIC_KEY] = params.get('public_key')
-    print(params)
-    session[API_CALLBACK] = params.get('callback')
+    if not session.get(API_CALLBACK):
+        params = request.args
+        session[API_PUBLIC_KEY] = params.get('public_key')
+        session[API_CALLBACK] = params.get('callback')
+        if not session.get(API_CALLBACK):
+            abort(400, ERROR_API_MISSING_PARAMS)
     return render_template('portability_form.html')
 
 
@@ -67,7 +69,7 @@ def confirm_yes():
         area_fields = request.form.getlist('area_data')
 
         headers = {
-            'Authorization': f'Bearer {session.get('external_api_token')}',
+            'Authorization': f'Bearer {session.get(API_TOKEN)}',
             'Content-Type': 'application/json'
         }
 
@@ -101,6 +103,5 @@ def confirm_yes():
         session.clear()
         return redirect(f'{external_api_callback}?data={quote(encrypted_data)}', code=302)
     except Exception as e:
-        print(f'\nErro: {e}\n')
         flash(ERROR_PORTABILITY_DATA_FETCH, 'error')
         return redirect('/portability/')

@@ -1,6 +1,6 @@
 # Mensagens de erro relacionadas à autenticação
 ERROR_SESSION_EXPIRED = "Sessão expirada. Faça login novamente."
-ERROR_API_MISSING_PARAMS = "A resposta da API está incompleta. Parâmetros obrigatórios estão ausentes."
+ERROR_API_MISSING_PARAMS = "Parâmetros obrigatórios estão ausentes."
 
 # Login
 ERROR_LOGIN_INVALID_CREDENTIALS = "Email ou senha incorretos"
