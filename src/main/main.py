@@ -10,7 +10,7 @@ from controller import RegisterBlueprint
 class App:
     def __init__(self):
         self.app = Flask(__name__, template_folder=os.path.join(os.getcwd(), 'src/main/template'))
-        load_dotenv(dotenv_path=os.path.join('.env'))
+        load_dotenv(dotenv_path=os.path.join('.env'), override=True)
         try:
             self.app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
             self.app.config['SESSION_TYPE'] = 'filesystem'

@@ -14,9 +14,11 @@ crypto_manager = CryptoManager()
 
 @portability_bp.route('/', methods=['GET'])
 def login_form():
+    print('env user url: ', os.getenv('API_USER_URL'))
     if not session.get(API_CALLBACK):
         params = request.args
-        session[API_PUBLIC_KEY] = params.get('public_key')
+        # session[API_PUBLIC_KEY] = params.get('public_key')
+        session[API_PUBLIC_KEY] = '-----BEGIN PUBLIC KEY-----' + params.get('public_key') + '-----END PUBLIC KEY-----'
         session[API_CALLBACK] = params.get('callback')
         if not session.get(API_CALLBACK):
             abort(400, ERROR_API_MISSING_PARAMS)
@@ -80,6 +82,7 @@ def confirm_yes():
         )
         user_response = requests.get(
             os.getenv('API_USER_URL').format(user_id=session.get('external_api_user_id')),
+            # f'{os.getenv('API_USER_URL')}?id={session.get('external_api_user_id')}',
             headers=headers
         )
 
@@ -90,18 +93,27 @@ def confirm_yes():
             area_data = area_response.json()
         
         if user_response.status_code == 200:
-            user_data = user_response.json()
+            user_data = user_response.json()[0]
             del user_data['id']
-        
+
         data = {
             'user_data': {k: v for k,v in user_data.items() if k in user_fields},
             'area_data': area_data
         }
 
-        encrypted_data = crypto_manager.encrypt_data(data, external_public_key=session.get('external_api_public_key'))
-        external_api_callback = session.get('external_api_callback')
+        encrypted_data = crypto_manager.encrypt_data(data, external_public_key=session.get(API_PUBLIC_KEY))
+        external_api_callback = session.get(API_CALLBACK)
         session.clear()
-        return redirect(f'{external_api_callback}?data={quote(encrypted_data)}', code=302)
+
+        return f"""
+            <html>
+                <body onload="document.forms[0].submit()">
+                    <form method="POST" action="{external_api_callback}">
+                        <input type="hidden" name="data" value="{encrypted_data}">
+                    </form>
+                </body>
+            </html>
+        """
     except Exception as e:
         flash(ERROR_PORTABILITY_DATA_FETCH, 'error')
         return redirect('/portability/')
