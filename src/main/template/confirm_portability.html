@@ -70,10 +70,12 @@
                 <div class="checkbox-group" id="user-group"></div>
             </div>
 
+            {% if session.show_area_info %}
             <div class="section">
                 <h4><label><input type="checkbox" id="area-select-all"> Área</label></h4>
                 <div class="checkbox-group" id="area-group"></div>
             </div>
+            {% endif %}
 
             <button type="submit">Confirmar</button>
         </form>
