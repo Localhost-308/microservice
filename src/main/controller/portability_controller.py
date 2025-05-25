@@ -73,6 +73,5 @@ def confirm_yes():
         session.clear()
         return redirect(f'{external_api_callback}?data={quote(encrypted_data)}', code=302)
     except Exception as e:
-        print(e)
         flash(ERROR_PORTABILITY_DATA_FETCH, 'error')
         return redirect('/portability/')
