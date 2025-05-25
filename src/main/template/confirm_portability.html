@@ -63,91 +63,10 @@
 <body>
     <div class="confirm-box">
         <h2>Confirmação de Portabilidade</h2>
-        <h3>Escolha quais dados você deseja incluir na portabilidade:</h3>
+        <h3>Você deseja continuar com a solicitação de portabilidade?</h3>
         <form action="/portability/confirm/yes" method="POST">
-            <div class="section">
-                <h4><label><input type="checkbox" id="user-select-all"> Usuário</label></h4>
-                <div class="checkbox-group" id="user-group"></div>
-            </div>
-
-            {% if session.show_area_info %}
-            <div class="section">
-                <h4><label><input type="checkbox" id="area-select-all"> Área</label></h4>
-                <div class="checkbox-group" id="area-group"></div>
-            </div>
-            {% endif %}
-
             <button type="submit">Confirmar</button>
         </form>
     </div>
-
-    <script>
-        const userFields = [
-            'created_on',
-            'email',
-            'first_name',
-            'last_name',
-            'updated_on'
-        ];
-
-        const areaFields = [
-            'area_name',
-            'average_tree_growth_cm',
-            'avoided_co2_emissions_cubic_meters',
-            'city',
-            'environmental_threats',
-            'fertilization',
-            'funding_source',
-            'irrigation',
-            'living_trees_to_date',
-            'measurement_date',
-            'number_of_trees_lost',
-            'pest_management',
-            'soil_fertility_index_percent',
-            'stage_indicator',
-            'total_project_cost_brl',
-            'tree_health_status',
-            'tree_survival_rate',
-            'uf',
-            'water_quality_indicators',
-            'water_sources'
-        ];
-
-        function renderCheckboxes(containerId, name, fields) {
-            const container = document.getElementById(containerId);
-            fields.forEach(field => {
-                const label = document.createElement('label');
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.name = name;
-                checkbox.value = field;
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(` ${field}`));
-                container.appendChild(label);
-            });
-        }
-
-        function setupGroupCheckbox(groupId, selectAllId) {
-            const group = document.getElementById(groupId);
-            const selectAll = document.getElementById(selectAllId);
-            const getCheckboxes = () => group.querySelectorAll('input[type="checkbox"]');
-
-            selectAll.addEventListener('change', () => {
-                getCheckboxes().forEach(cb => cb.checked = selectAll.checked);
-            });
-
-            group.addEventListener('change', () => {
-                const checkboxes = getCheckboxes();
-                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-                selectAll.checked = allChecked;
-            });
-        }
-
-        renderCheckboxes('user-group', 'user_data', userFields);
-        renderCheckboxes('area-group', 'area_data', areaFields);
-
-        setupGroupCheckbox('user-group', 'user-select-all');
-        setupGroupCheckbox('area-group', 'area-select-all');
-    </script>
 </body>
 </html>
